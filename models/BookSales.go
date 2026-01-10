@@ -1,4 +1,5 @@
-package main
+package models
+
 
 
 type BookSales struct { 
