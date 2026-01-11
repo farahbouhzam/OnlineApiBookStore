@@ -9,5 +9,6 @@ type AuthorStore interface {
  GetAuthor(id int) (models.Author, error) 
  UpdateAuthor(id int, author models.Author) (models.Author, error) 
  DeleteAuthor(id int) error 
+ GetAllAuthors() ([]models.Author, error)
  
 } 

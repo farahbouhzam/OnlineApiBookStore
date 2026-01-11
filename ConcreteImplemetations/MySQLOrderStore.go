@@ -162,7 +162,7 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error) {
 
 }
 
-func (s *MySQLOrderStore) UpdateOrder(id int, status string) (models.Order, error) {
+func (s *MySQLOrderStore) UpdateOrderStatus(id int, status string) (models.Order, error) {
 	var order models.Order
 
 	query := `
@@ -261,3 +261,5 @@ func (s *MySQLOrderStore) GetOrderByDateRange(
 
 	return orders, nil
 }
+
+

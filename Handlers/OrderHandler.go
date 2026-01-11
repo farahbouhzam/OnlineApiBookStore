@@ -94,7 +94,7 @@ func (h *OrderHandler) updateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBook, err := h.OrderStore.
+	updatedBook, err := h.OrderStore.UpdateOrderStatus(id,Order.Status)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

@@ -4,12 +4,10 @@ import (
 	"database/sql"
 
 	"online_bookStore/models"
-	
 )
 
 type MySQLAuthorStore struct {
 	db *sql.DB
-	
 }
 
 // Constructore
@@ -22,9 +20,6 @@ func NewMySQLAuthorStore(db *sql.DB) *MySQLAuthorStore {
 
 func (s *MySQLAuthorStore) CreateAuthor(author models.Author) (models.Author, error) {
 
-	
-
-	
 	query := `
 		INSERT INTO authors (first_name, last_name, bio)
 		VALUES (?, ?, ?)
@@ -50,17 +45,15 @@ func (s *MySQLAuthorStore) CreateAuthor(author models.Author) (models.Author, er
 	return author, nil
 }
 
-func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error){
+func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error) {
 
-    query := `
+	query := `
 		SELECT id, first_name, last_name, bio
 		FROM authors
 		WHERE id = ?
 	`
 
 	var author models.Author
-	
-
 
 	err := s.db.QueryRow(query, id).Scan(
 		&author.ID,
@@ -68,7 +61,7 @@ func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error){
 		&author.LastName,
 		&author.Bio,
 	)
-    
+
 	if err != nil {
 		return author, err
 	}
@@ -77,17 +70,13 @@ func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error){
 
 }
 
-func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Author, error){
-
-	
-
+func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Author, error) {
 
 	query := `
 		UPDATE authors
 		SET first_name = ?, last_name = ?, bio = ?
 		WHERE id = ?
 	`
-
 
 	result, err := s.db.Exec(
 		query,
@@ -102,34 +91,31 @@ func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Au
 	}
 
 	rowsAffected, err := result.RowsAffected()
-    if err !=nil {
+	if err != nil {
 		return author, err
 	}
 
-
-	if rowsAffected==0{
+	if rowsAffected == 0 {
 		return author, sql.ErrNoRows
 	}
 
-
-	author.ID=id
+	author.ID = id
 
 	return author, nil
 
 }
 
-
 func (s *MySQLAuthorStore) DeleteAuthor(id int) error {
-	 query := `
+	query := `
 		DELETE FROM authors
 		WHERE id = ?
 	`
 
-	result, err:= s.db.Exec(query,id)
+	result, err := s.db.Exec(query, id)
 
-	if err !=nil{
+	if err != nil {
 		return err
-	} 
+	}
 
 	rowAffected, err := result.RowsAffected()
 
@@ -137,13 +123,44 @@ func (s *MySQLAuthorStore) DeleteAuthor(id int) error {
 		return err
 	}
 
-
 	if rowAffected == 0 {
 		return sql.ErrNoRows
 	}
 
-
 	return nil
 }
 
+func (s *MySQLAuthorStore) GetAllAuthors() ([]models.Author, error) {
+	query := `
+	  SELECT id, first_name, last_name, bio
+	  FROM authors
+	
+	`
+	rows, err := s.db.Query(query)
 
+	if err != nil {
+		return nil, err
+	}
+
+	var authors []models.Author
+
+	for rows.Next() {
+		var author models.Author
+
+		err := rows.Scan(
+			&author.ID,
+			&author.FirstName,
+			&author.LastName,
+			&author.Bio,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		authors = append(authors, author)
+	}
+
+	return authors, nil
+
+}
