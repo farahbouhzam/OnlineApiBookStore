@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"online_bookStore/models"
+	"context"
 	
 )
 
@@ -19,7 +20,7 @@ func NewMySQLCustomerStore(db *sql.DB) *MySQLCustomerStore {
 }
 
 
-func (s *MySQLCustomerStore) CreateCustomer(customer models.Customer) (models.Customer, error) {
+func (s *MySQLCustomerStore) CreateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error) {
 
 	// 1. Insert address
 	addressQuery := `
@@ -27,7 +28,8 @@ func (s *MySQLCustomerStore) CreateCustomer(customer models.Customer) (models.Cu
 		VALUES (?, ?, ?, ?, ?)
 	`
 
-	addressResult, err := s.db.Exec(
+	addressResult, err := s.db.ExecContext(
+		ctx,
 		addressQuery,
 		customer.Address.Street,
 		customer.Address.City,
@@ -71,7 +73,7 @@ func (s *MySQLCustomerStore) CreateCustomer(customer models.Customer) (models.Cu
 	return customer, nil
 }
 
-func (s *MySQLCustomerStore) GetCustomer(id int) (models.Customer, error) {
+func (s *MySQLCustomerStore) GetCustomer(ctx context.Context,id int) (models.Customer, error) {
 
 	query := `
 		SELECT
@@ -84,7 +86,7 @@ func (s *MySQLCustomerStore) GetCustomer(id int) (models.Customer, error) {
 
 	var customer models.Customer
 
-	err := s.db.QueryRow(query, id).Scan(
+	err := s.db.QueryRowContext(ctx,query, id).Scan(
 		&customer.ID,
 		&customer.Name,
 		&customer.Email,
@@ -104,7 +106,7 @@ func (s *MySQLCustomerStore) GetCustomer(id int) (models.Customer, error) {
 }
 
 
-func (s *MySQLCustomerStore) UpdateCustomer(id int, customer models.Customer) (models.Customer, error) {
+func (s *MySQLCustomerStore) UpdateCustomer(ctx context.Context,id int, customer models.Customer) (models.Customer, error) {
 
 	// 1. Update address
 	addressQuery := `
@@ -113,7 +115,8 @@ func (s *MySQLCustomerStore) UpdateCustomer(id int, customer models.Customer) (m
 		WHERE id = ?
 	`
 
-	_, err := s.db.Exec(
+	_, err := s.db.ExecContext(
+		ctx,
 		addressQuery,
 		customer.Address.Street,
 		customer.Address.City,
@@ -157,14 +160,14 @@ func (s *MySQLCustomerStore) UpdateCustomer(id int, customer models.Customer) (m
 }
 
 
-func (s *MySQLCustomerStore) DeleteCustomer(id int) error {
+func (s *MySQLCustomerStore) DeleteCustomer(ctx context.Context,id int) error {
 
 	query := `
 		DELETE FROM customers
 		WHERE id = ?
 	`
 
-	result, err := s.db.Exec(query, id)
+	result, err := s.db.ExecContext(ctx,query, id)
 	if err != nil {
 		return err
 	}

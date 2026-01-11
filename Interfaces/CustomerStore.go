@@ -3,10 +3,11 @@ package interfaces
 
 import (
 	"online_bookStore/models"
+	"context"
 )
 type CustomerStore interface {
-	CreateCustomer(customer models.Customer) (models.Customer, error)
-	GetCustomer(id int) (models.Customer, error)
-	UpdateCustomer(id int, customer models.Customer) (models.Customer, error)
-	DeleteCustomer(id int) error
+	CreateCustomer(ctx context.Context,customer models.Customer) (models.Customer, error)
+	GetCustomer(ctx context.Context,id int) (models.Customer, error)
+	UpdateCustomer(ctx context.Context,id int, customer models.Customer) (models.Customer, error)
+	DeleteCustomer(ctx context.Context,id int) error
 }

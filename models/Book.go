@@ -14,3 +14,13 @@ type Book struct {
     Stock       int       `json:"stock"` 
 } 
 
+
+type SearchCriteria struct {
+    Title string
+    AuthorId int
+    Genre string
+    MinPrice float64
+    MaxPrice float64
+    
+    
+}

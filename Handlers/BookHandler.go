@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"online_bookStore/interfaces"
+     "context"
+	"online_bookStore/Interfaces"
 	"online_bookStore/models"
+	"time"
 )
 
 type BookHandler struct {
@@ -50,6 +51,8 @@ func (h *BookHandler) BookByIDHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) getBookByID(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -57,7 +60,7 @@ func (h *BookHandler) getBookByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book, err := h.bookStore.GetBook(id)
+	book, err := h.bookStore.GetBook(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -74,6 +77,8 @@ func (h *BookHandler) getBookByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -94,7 +99,7 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBook, err := h.bookStore.UpdateBook(id, book)
+	updatedBook, err := h.bookStore.UpdateBook(ctx,id, book)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -111,6 +116,8 @@ func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -124,7 +131,7 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdBook, err := h.bookStore.CreateBook(book)
+	createdBook, err := h.bookStore.CreateBook(ctx,book)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,6 +149,8 @@ func (h *BookHandler) createBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -149,7 +158,7 @@ func (h *BookHandler) deleteBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.bookStore.DeleteBook(id)
+	err = h.bookStore.DeleteBook(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

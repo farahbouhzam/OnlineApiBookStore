@@ -1,6 +1,7 @@
 package concreteimplemetations
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"time"
@@ -18,7 +19,7 @@ func NewMySQLOrderStore(db *sql.DB) *MySQLOrderStore {
 	}
 }
 
-func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error) {
+func (s *MySQLOrderStore) CreateOrder(ctx context.Context, order models.Order) (models.Order, error) {
 
 	tx, err := s.db.Begin()
 
@@ -38,7 +39,8 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error) 
         VALUES (?, ?, ?)
     `
 
-	result, err := tx.Exec(
+	result, err := tx.ExecContext(
+		ctx,
 		orderQuery,
 		order.Customer.ID,
 		order.TotalPrice,
@@ -87,7 +89,7 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error) 
 
 }
 
-func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error) {
+func (s *MySQLOrderStore) GetOrder(ctx context.Context,id int) (models.Order, error) {
 
 	query := `
 	SELECT
@@ -100,7 +102,7 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error) {
 
 	var order models.Order
 
-	err := s.db.QueryRow(query, id).Scan(
+	err := s.db.QueryRowContext(ctx,query, id).Scan(
 		&order.ID,
 		&order.Customer.ID,
 		&order.TotalPrice,
@@ -162,7 +164,7 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error) {
 
 }
 
-func (s *MySQLOrderStore) UpdateOrderStatus(id int, status string) (models.Order, error) {
+func (s *MySQLOrderStore) UpdateOrderStatus(ctx context.Context,id int, status string) (models.Order, error) {
 	var order models.Order
 
 	query := `
@@ -171,7 +173,7 @@ func (s *MySQLOrderStore) UpdateOrderStatus(id int, status string) (models.Order
 	  WHERE id = ?
 	`
 
-	result, err := s.db.Exec(query, status, id)
+	result, err := s.db.ExecContext(ctx,query, status, id)
 	if err != nil {
 		return order, err
 	}
@@ -192,13 +194,13 @@ func (s *MySQLOrderStore) UpdateOrderStatus(id int, status string) (models.Order
 
 }
 
-func (s *MySQLOrderStore) DeleteOrder(id int) error {
+func (s *MySQLOrderStore) DeleteOrder(ctx context.Context,id int) error {
 	query := `
 	    DELETE FROM orders
 		WHERE id = ?
 	 `
 
-	result, err := s.db.Exec(query, id)
+	result, err := s.db.ExecContext(ctx,query, id)
 
 	if err != nil {
 		return err
@@ -218,6 +220,7 @@ func (s *MySQLOrderStore) DeleteOrder(id int) error {
 }
 
 func (s *MySQLOrderStore) GetOrderByDateRange(
+	ctx context.Context,
 	from time.Time,
 	to time.Time,
 ) ([]models.Order, error) {
@@ -232,7 +235,7 @@ func (s *MySQLOrderStore) GetOrderByDateRange(
 		ORDER BY o.created_at ASC
 	`
 
-	rows, err := s.db.Query(query, from, to)
+	rows, err := s.db.QueryContext(ctx,query, from, to)
 	if err != nil {
 		return nil, err
 	}
@@ -263,3 +266,45 @@ func (s *MySQLOrderStore) GetOrderByDateRange(
 }
 
 
+func (s *MySQLOrderStore) GetAllOrders(ctx context.Context) ([]models.Order, error) {
+	query := `
+	   SELECT o.id, o.total_price, o.created_at, o.status,
+	   c.id, c.name,c.email
+
+	   From orders o
+	   JOIN customers c ON o.customer_id = c.id
+
+	`
+
+	rows , err := s.db.QueryContext(ctx,query)
+
+	if err != nil {
+		return nil , err
+	}
+
+	var orders []models.Order
+
+	for rows.Next(){
+		var order models.Order
+		err := rows.Scan(
+			&order.ID,
+			&order.TotalPrice,
+			&order.CreatedAt,
+			&order.Status,
+			&order.Customer.ID,
+			&order.Customer.Name,
+			&order.Customer.Email,
+
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		orders = append(orders, order)
+	}
+
+	return orders, nil
+
+
+}

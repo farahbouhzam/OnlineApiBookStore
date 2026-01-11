@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"online_bookStore/interfaces"
+	"online_bookStore/Interfaces"
 	"online_bookStore/models"
+	"context"
+	"time"
 )
 
 type OrderHandler struct {
@@ -50,14 +52,16 @@ func (h *OrderHandler) OrdersByIDHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *OrderHandler) getOrderByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/Orders/")
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	idStr := strings.TrimPrefix(r.URL.Path, "/orders/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	Order, err := h.OrderStore.GetOrder(id)
+	Order, err := h.OrderStore.GetOrder(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -74,7 +78,9 @@ func (h *OrderHandler) getOrderByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) updateOrder(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	idStr := strings.TrimPrefix(r.URL.Path, "/orders/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -94,7 +100,7 @@ func (h *OrderHandler) updateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBook, err := h.OrderStore.UpdateOrderStatus(id,Order.Status)
+	updatedBook, err := h.OrderStore.UpdateOrderStatus(ctx,id,Order.Status)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -111,6 +117,8 @@ func (h *OrderHandler) updateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) createOrder(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -124,7 +132,7 @@ func (h *OrderHandler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdOrder, err := h.OrderStore.CreateOrder(Order)
+	createdOrder, err := h.OrderStore.CreateOrder(ctx,Order)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,6 +150,8 @@ func (h *OrderHandler) createOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) deleteOrder(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/orders/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -149,11 +159,36 @@ func (h *OrderHandler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.OrderStore.DeleteOrder(id)
+	err = h.OrderStore.DeleteOrder(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+
+func (h *OrderHandler) GetAllOrders(w http.ResponseWriter, r *http.Request)  {
+    ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	orders, err := h.OrderStore.GetAllOrders(ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	resp, err :=json.Marshal(orders)
+
+	if err !=nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+
+
 }

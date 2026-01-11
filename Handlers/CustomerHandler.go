@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"online_bookStore/interfaces"
+	"online_bookStore/Interfaces"
 	"online_bookStore/models"
+	"context"
+	"time"
 )
 
 type CustomerHandler struct {
@@ -50,6 +51,8 @@ func (h *CustomerHandler) CustomersByIDHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (h *CustomerHandler) getCustomerByID(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/customers/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -57,7 +60,7 @@ func (h *CustomerHandler) getCustomerByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	customer, err := h.CustomerStore.GetCustomer(id)
+	customer, err := h.CustomerStore.GetCustomer(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -74,7 +77,9 @@ func (h *CustomerHandler) getCustomerByID(w http.ResponseWriter, r *http.Request
 }
 
 func (h *CustomerHandler) updateCustomer(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	idStr := strings.TrimPrefix(r.URL.Path, "/customers/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -94,7 +99,7 @@ func (h *CustomerHandler) updateCustomer(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	updatedBook, err := h.CustomerStore.UpdateCustomer(id,customer)
+	updatedBook, err := h.CustomerStore.UpdateCustomer(ctx,id,customer)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -111,6 +116,8 @@ func (h *CustomerHandler) updateCustomer(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *CustomerHandler) createCustomer(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -124,7 +131,7 @@ func (h *CustomerHandler) createCustomer(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	createdCustomer, err := h.CustomerStore.CreateCustomer(customer)
+	createdCustomer, err := h.CustomerStore.CreateCustomer(ctx,customer)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,6 +149,8 @@ func (h *CustomerHandler) createCustomer(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *CustomerHandler) deleteCustomer(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/customers/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -149,7 +158,7 @@ func (h *CustomerHandler) deleteCustomer(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = h.CustomerStore.DeleteCustomer(id)
+	err = h.CustomerStore.DeleteCustomer(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

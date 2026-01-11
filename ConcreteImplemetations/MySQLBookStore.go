@@ -1,6 +1,7 @@
 package concreteimplemetations
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"online_bookStore/models"
@@ -20,7 +21,7 @@ func NewMySQLBookStore(db *sql.DB) *MySQLBookStore {
 	}
 }
 
-func (s *MySQLBookStore) CreateBook(book models.Book) (models.Book, error) {
+func (s *MySQLBookStore) CreateBook(ctx context.Context,book models.Book) (models.Book, error) {
 
 	
 
@@ -35,7 +36,8 @@ func (s *MySQLBookStore) CreateBook(book models.Book) (models.Book, error) {
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := s.db.Exec(
+	result, err := s.db.ExecContext(
+		ctx,
 		query,
 		book.Title,
 		string(genresJson),
@@ -58,7 +60,7 @@ func (s *MySQLBookStore) CreateBook(book models.Book) (models.Book, error) {
 	return book, nil
 }
 
-func (s *MySQLBookStore) GetBook(id int) (models.Book, error){
+func (s *MySQLBookStore) GetBook(ctx context.Context, id int) (models.Book, error){
 
     query := `
 		SELECT
@@ -73,7 +75,7 @@ func (s *MySQLBookStore) GetBook(id int) (models.Book, error){
 	var genresJson string
 
 
-	err := s.db.QueryRow(query, id).Scan(
+	err := s.db.QueryRowContext(ctx,query, id).Scan(
 		&book.ID,                 // book ID
 		&book.Title,              // book title
 		&genresJson,              // genres as JSON string
@@ -102,7 +104,7 @@ func (s *MySQLBookStore) GetBook(id int) (models.Book, error){
 
 }
 
-func (s *MySQLBookStore) UpdateBook(id int, book models.Book) (models.Book, error){
+func (s *MySQLBookStore) UpdateBook(ctx context.Context, id int, book models.Book) (models.Book, error){
 
 	genresJSON, err := json.Marshal(book.Genres)
 	if err != nil {
@@ -118,7 +120,8 @@ func (s *MySQLBookStore) UpdateBook(id int, book models.Book) (models.Book, erro
 	`
 
 
-	result, err := s.db.Exec(
+	result, err := s.db.ExecContext(
+		ctx,
 		query,
 		book.Title,
 		string(genresJSON),
@@ -151,13 +154,13 @@ func (s *MySQLBookStore) UpdateBook(id int, book models.Book) (models.Book, erro
 }
 
 
-func (s *MySQLBookStore) DeleteBook(id int) error {
+func (s *MySQLBookStore) DeleteBook(ctx context.Context,id int) error {
 	 query := `
 		DELETE FROM books
 		WHERE id = ?
 	`
 
-	result, err:= s.db.Exec(query,id)
+	result, err:= s.db.ExecContext(ctx,query,id)
 
 	if err !=nil{
 		return err
@@ -179,3 +182,73 @@ func (s *MySQLBookStore) DeleteBook(id int) error {
 }
 
 
+
+
+func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.SearchCriteria)([]models.Book, error){
+
+    var books []models.Book
+	query := `
+	  SELECT b.id, b.title, b.published_at, b.price, b.stock, p.author_id
+	  FROM books b
+	  WHERE 1 = 1
+	`
+	var args []interface{}
+
+	if searchCriteria.Title !=""{
+		query +="AND b.title LIKE ?"
+		args = append(args, "%"+searchCriteria.Title+"%")
+	} 
+
+	if searchCriteria.AuthorId !=0 {
+		query +=" AND b.title LIKE ?"
+		args = append(args,searchCriteria.AuthorId)
+
+	}
+
+	if searchCriteria.Genre !=""{
+		query += "AND b.genres LIKE ?"
+		args = append(args,searchCriteria.Genre)
+
+	}
+
+	if searchCriteria.MinPrice != 0 {
+		query += " AND b.price >= ?"
+		args = append(args,searchCriteria.MinPrice)
+	}
+
+	if searchCriteria.MaxPrice !=0 {
+		query +="AND b.price <= ?"
+		args = append(args,searchCriteria.MaxPrice)
+	}
+
+	rows, err := s.db.QueryContext(ctx,query, args...)
+
+	if err !=nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next(){
+		var book models.Book
+
+		err := rows.Scan(
+			&book.ID,
+			&book.Title,
+			&book.PublishedAt,
+			&book.Price,
+			&book.Stock,
+			&book.Author.ID,
+
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+
+	return books, nil
+
+
+}

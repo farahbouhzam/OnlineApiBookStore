@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"online_bookStore/interfaces"
+     "context"
+	"online_bookStore/Interfaces"
 	"online_bookStore/models"
+	"time"
 )
 
 type AuthorHandler struct {
@@ -33,7 +34,27 @@ func (h *AuthorHandler) AuthorsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *AuthorHandler) getAuthors(w http.ResponseWriter, r *http.Request)
+func (h *AuthorHandler) getAuthors(w http.ResponseWriter, r *http.Request){
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	autors, err := h.AuthorStore.GetAllAuthors(ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(autors)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+
+
+}
 
 // /books/{id}
 func (h *AuthorHandler) AuthorsByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +72,8 @@ func (h *AuthorHandler) AuthorsByIDHandler(w http.ResponseWriter, r *http.Reques
 
 func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
 
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -59,7 +81,7 @@ func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, err := h.AuthorStore.GetAuthor(ctx, id)
+	author, err := h.AuthorStore.GetAuthor(ctx,id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -76,7 +98,10 @@ func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -96,7 +121,7 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBook, err := h.AuthorStore.UpdateAuthor(id,author)
+	updatedBook, err := h.AuthorStore.UpdateAuthor(ctx,id,author)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -113,6 +138,8 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -126,7 +153,7 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdAuthor, err := h.AuthorStore.CreateAuthor(author)
+	createdAuthor, err := h.AuthorStore.CreateAuthor(ctx,author)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -144,6 +171,8 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
 	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -151,7 +180,7 @@ func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.AuthorStore.DeleteAuthor(id)
+	err = h.AuthorStore.DeleteAuthor(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
