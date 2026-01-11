@@ -50,6 +50,8 @@ func (h *AuthorHandler) AuthorsByIDHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
 	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -57,7 +59,7 @@ func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, err := h.AuthorStore.GetAuthor(id)
+	author, err := h.AuthorStore.GetAuthor(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

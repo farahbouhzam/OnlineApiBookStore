@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"online_bookStore/models"
+	"context"
 )
 
 type MySQLAuthorStore struct {
@@ -18,14 +19,15 @@ func NewMySQLAuthorStore(db *sql.DB) *MySQLAuthorStore {
 	}
 }
 
-func (s *MySQLAuthorStore) CreateAuthor(author models.Author) (models.Author, error) {
+func (s *MySQLAuthorStore) CreateAuthor(ctx context.Context, author models.Author) (models.Author, error) {
 
 	query := `
 		INSERT INTO authors (first_name, last_name, bio)
 		VALUES (?, ?, ?)
 	`
 
-	result, err := s.db.Exec(
+	result, err := s.db.ExecContext(
+		ctx,
 		query,
 		author.FirstName,
 		author.LastName,
@@ -45,7 +47,7 @@ func (s *MySQLAuthorStore) CreateAuthor(author models.Author) (models.Author, er
 	return author, nil
 }
 
-func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error) {
+func (s *MySQLAuthorStore) GetAuthor(ctx context.Context, id int) (models.Author, error) {
 
 	query := `
 		SELECT id, first_name, last_name, bio
@@ -55,7 +57,7 @@ func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error) {
 
 	var author models.Author
 
-	err := s.db.QueryRow(query, id).Scan(
+	err := s.db.QueryRowContext(ctx,query, id).Scan(
 		&author.ID,
 		&author.FirstName,
 		&author.LastName,
@@ -70,7 +72,7 @@ func (s *MySQLAuthorStore) GetAuthor(id int) (models.Author, error) {
 
 }
 
-func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Author, error) {
+func (s *MySQLAuthorStore) UpdateAuthor(ctx context.Context,id int, author models.Author) (models.Author, error) {
 
 	query := `
 		UPDATE authors
@@ -78,7 +80,8 @@ func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Au
 		WHERE id = ?
 	`
 
-	result, err := s.db.Exec(
+	result, err := s.db.ExecContext(
+		ctx,
 		query,
 		author.FirstName,
 		author.LastName,
@@ -105,13 +108,13 @@ func (s *MySQLAuthorStore) UpdateAuthor(id int, author models.Author) (models.Au
 
 }
 
-func (s *MySQLAuthorStore) DeleteAuthor(id int) error {
+func (s *MySQLAuthorStore) DeleteAuthor(ctx context.Context,id int) error {
 	query := `
 		DELETE FROM authors
 		WHERE id = ?
 	`
 
-	result, err := s.db.Exec(query, id)
+	result, err := s.db.ExecContext(ctx,query, id)
 
 	if err != nil {
 		return err
@@ -130,13 +133,13 @@ func (s *MySQLAuthorStore) DeleteAuthor(id int) error {
 	return nil
 }
 
-func (s *MySQLAuthorStore) GetAllAuthors() ([]models.Author, error) {
+func (s *MySQLAuthorStore) GetAllAuthors(ctx context.Context) ([]models.Author, error) {
 	query := `
 	  SELECT id, first_name, last_name, bio
 	  FROM authors
 	
 	`
-	rows, err := s.db.Query(query)
+	rows, err := s.db.QueryContext(ctx,query)
 
 	if err != nil {
 		return nil, err
