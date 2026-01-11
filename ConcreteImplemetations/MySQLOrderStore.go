@@ -3,7 +3,7 @@ package concreteimplemetations
 import (
 	"database/sql"
 	"encoding/json"
-	 "time"
+	"time"
 
 	"online_bookStore/models"
 )
@@ -18,9 +18,7 @@ func NewMySQLOrderStore(db *sql.DB) *MySQLOrderStore {
 	}
 }
 
-
-func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error){
-
+func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error) {
 
 	tx, err := s.db.Begin()
 
@@ -28,15 +26,12 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error){
 		return order, err
 	}
 
-
-
-	defer func(){
-        if p := recover(); p!= nil {
+	defer func() {
+		if p := recover(); p != nil {
 			tx.Rollback()
 			panic(p)
 		}
 	}()
-
 
 	orderQuery := `
         INSERT INTO orders (customer_id, total_price, status)
@@ -50,12 +45,10 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error){
 		order.Status,
 	)
 
-
 	if err != nil {
 		tx.Rollback()
 		return order, err
 	}
-
 
 	orderID, err := result.LastInsertId()
 	if err != nil {
@@ -63,21 +56,20 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error){
 		return order, err
 	}
 
-	order.ID= int(orderID)
+	order.ID = int(orderID)
 
 	query := `
 	INSERT INTO order_items (order_id, book_id, quantity)
 	VALUES (?, ?, ?)
 	`
 
-	for _,item := range order.Items {
+	for _, item := range order.Items {
 		_, err = tx.Exec(
 			query,
-		    order.ID,
+			order.ID,
 			item.Book.ID,
 			item.Quantity,
 		)
-
 
 		if err != nil {
 			tx.Rollback()
@@ -85,22 +77,18 @@ func (s *MySQLOrderStore) CreateOrder(order models.Order) (models.Order, error){
 		}
 	}
 
-	if err = tx.Commit(); err !=nil {
+	if err = tx.Commit(); err != nil {
 		tx.Rollback()
 
 		return order, err
 	}
 
-
 	return order, nil
-
 
 }
 
+func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error) {
 
-
-func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error){
-        
 	query := `
 	SELECT
 	  o.id, o.customer_id, o.total_price, o.created_at, o.status, 
@@ -110,11 +98,9 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error){
 	WHERE o.id=?
 	`
 
-
 	var order models.Order
 
-
-	err := s.db.QueryRow(query,id).Scan(
+	err := s.db.QueryRow(query, id).Scan(
 		&order.ID,
 		&order.Customer.ID,
 		&order.TotalPrice,
@@ -145,7 +131,7 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error){
 	}
 
 	defer rows.Close()
-	for rows.Next(){
+	for rows.Next() {
 		var item models.OrderItem
 		var jsonGenre string
 		err := rows.Scan(
@@ -164,30 +150,28 @@ func (s *MySQLOrderStore) GetOrder(id int) (models.Order, error){
 			return order, err
 		}
 
-		err = json.Unmarshal([]byte(jsonGenre),&item.Book.Genres)
-        if err != nil {
+		err = json.Unmarshal([]byte(jsonGenre), &item.Book.Genres)
+		if err != nil {
 			return order, err
 		}
 
 		order.Items = append(order.Items, item)
 	}
 
-
 	return order, nil
-
 
 }
 
 func (s *MySQLOrderStore) UpdateOrder(id int, status string) (models.Order, error) {
-    var order models.Order
+	var order models.Order
 
 	query := `
 	  UPDATE orders
-	  SET status = ?
+	  SET status = ?		
 	  WHERE id = ?
 	`
 
-	result, err := s.db.Exec(query,status, id)
+	result, err := s.db.Exec(query, status, id)
 	if err != nil {
 		return order, err
 	}
@@ -201,40 +185,37 @@ func (s *MySQLOrderStore) UpdateOrder(id int, status string) (models.Order, erro
 		return order, sql.ErrNoRows
 	}
 
-	order.ID=id
-	order.Status= status
- 
-	return order, nil
+	order.ID = id
+	order.Status = status
 
+	return order, nil
 
 }
 
-
 func (s *MySQLOrderStore) DeleteOrder(id int) error {
-	 query := `
+	query := `
 	    DELETE FROM orders
 		WHERE id = ?
 	 `
 
-	 result, err := s.db.Exec(query,id)
+	result, err := s.db.Exec(query, id)
 
-	 if err != nil {
+	if err != nil {
 		return err
-	 }
+	}
 
-	 rowsAffected, err := result.RowsAffected()
-	 if err != nil {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
 		return err
-	 }
+	}
 
-	 if rowsAffected==0 {
+	if rowsAffected == 0 {
 		return sql.ErrNoRows
-	 }
+	}
 
-	 return nil
+	return nil
 
 }
-
 
 func (s *MySQLOrderStore) GetOrderByDateRange(
 	from time.Time,
@@ -280,10 +261,3 @@ func (s *MySQLOrderStore) GetOrderByDateRange(
 
 	return orders, nil
 }
-
-
-
-
-
-
-
