@@ -1,28 +1,32 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
-     "context"
+	"time"
+
 	"online_bookStore/Interfaces"
 	"online_bookStore/models"
-	"time"
 )
 
 type AuthorHandler struct {
 	AuthorStore interfaces.AuthorStore
 }
 
-func NewAuthorHandler(AuthorStore interfaces.AuthorStore) *AuthorHandler {
+func NewAuthorHandler(authorStore interfaces.AuthorStore) *AuthorHandler {
 	return &AuthorHandler{
-		AuthorStore: AuthorStore,
+		AuthorStore: authorStore,
 	}
 }
 
-// /books
+/*
+	ROUTE: /authors
+*/
 func (h *AuthorHandler) AuthorsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -30,33 +34,38 @@ func (h *AuthorHandler) AuthorsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.createAuthor(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
-func (h *AuthorHandler) getAuthors(w http.ResponseWriter, r *http.Request){
-
+/*
+	GET /authors
+*/
+func (h *AuthorHandler) getAuthors(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	autors, err := h.AuthorStore.GetAllAuthors(ctx)
 
+	authors, err := h.AuthorStore.GetAllAuthors(ctx)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR fetching authors: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to fetch authors")
 		return
 	}
 
-	resp, err := json.Marshal(autors)
+	resp, err := json.Marshal(authors)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR serializing authors: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to serialize authors")
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
-
-
 }
 
-// /books/{id}
+/*
+	ROUTE: /authors/{id}
+*/
 func (h *AuthorHandler) AuthorsByIDHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -66,30 +75,34 @@ func (h *AuthorHandler) AuthorsByIDHandler(w http.ResponseWriter, r *http.Reques
 	case http.MethodDelete:
 		h.deleteAuthor(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
+/*
+	GET /authors/{id}
+*/
 func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
-
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
-	id, err := strconv.Atoi(idStr)
+
+	id, err := parseID(r.URL.Path, "/authors/")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "invalid author id")
 		return
 	}
 
-	author, err := h.AuthorStore.GetAuthor(ctx,id)
+	author, err := h.AuthorStore.GetAuthor(ctx, id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		log.Printf("ERROR fetching author %d: %v", id, err)
+		WriteError(w, http.StatusNotFound, "author not found")
 		return
 	}
 
 	resp, err := json.Marshal(author)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR serializing author %d: %v", id, err)
+		WriteError(w, http.StatusInternalServerError, "failed to serialize author")
 		return
 	}
 
@@ -97,39 +110,44 @@ func (h *AuthorHandler) getAuthorByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+/*
+	PUT /authors/{id}
+*/
 func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request) {
-
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
-	id, err := strconv.Atoi(idStr)
+
+	id, err := parseID(r.URL.Path, "/authors/")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "invalid author id")
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("ERROR reading update author body: %v", err)
+		WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	var author models.Author
-	err = json.Unmarshal(body, &author)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if err := json.Unmarshal(body, &author); err != nil {
+		log.Printf("ERROR unmarshalling author %d: %v", id, err)
+		WriteError(w, http.StatusBadRequest, "invalid author payload")
 		return
 	}
 
-	updatedBook, err := h.AuthorStore.UpdateAuthor(ctx,id,author)
+	updatedAuthor, err := h.AuthorStore.UpdateAuthor(ctx, id, author)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		log.Printf("ERROR updating author %d: %v", id, err)
+		WriteError(w, http.StatusNotFound, "author not found")
 		return
 	}
 
-	resp, err := json.Marshal(updatedBook)
+	resp, err := json.Marshal(updatedAuthor)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR serializing updated author %d: %v", id, err)
+		WriteError(w, http.StatusInternalServerError, "failed to serialize author")
 		return
 	}
 
@@ -137,31 +155,46 @@ func (h *AuthorHandler) updateAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+/*
+	POST /authors
+*/
 func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("ERROR reading create author body: %v", err)
+		WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	var author models.Author
-	err = json.Unmarshal(body, &author)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if err := json.Unmarshal(body, &author); err != nil {
+		log.Printf("ERROR unmarshalling author: %v", err)
+		WriteError(w, http.StatusBadRequest, "invalid author payload")
 		return
 	}
 
-	createdAuthor, err := h.AuthorStore.CreateAuthor(ctx,author)
+	createdAuthor, err := h.AuthorStore.CreateAuthor(ctx, author)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR creating author: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to create author")
 		return
 	}
+
+	//  significant business log
+	log.Printf(
+		"AUTHOR CREATED id=%d name=%s %s",
+		createdAuthor.ID,
+		createdAuthor.FirstName,
+		createdAuthor.LastName,
+	)
 
 	resp, err := json.Marshal(createdAuthor)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("ERROR serializing created author: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to serialize author")
 		return
 	}
 
@@ -170,21 +203,35 @@ func (h *AuthorHandler) createAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+/*
+	DELETE /authors/{id}
+*/
 func (h *AuthorHandler) deleteAuthor(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	idStr := strings.TrimPrefix(r.URL.Path, "/authors/")
-	id, err := strconv.Atoi(idStr)
+
+	id, err := parseID(r.URL.Path, "/authors/")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "invalid author id")
 		return
 	}
 
-	err = h.AuthorStore.DeleteAuthor(ctx, id)
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+	if err := h.AuthorStore.DeleteAuthor(ctx, id); err != nil {
+		log.Printf("ERROR deleting author %d: %v", id, err)
+		WriteError(w, http.StatusNotFound, "author not found")
 		return
 	}
+
+	//  significant business log
+	log.Printf("AUTHOR DELETED id=%d", id)
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+/*
+	HELPER: parse ID from URL
+*/
+func parseID(path, prefix string) (int, error) {
+	idStr := strings.TrimPrefix(path, prefix)
+	return strconv.Atoi(idStr)
 }

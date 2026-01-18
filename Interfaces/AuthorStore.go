@@ -11,4 +11,6 @@ type AuthorStore interface {
 	UpdateAuthor(ctx context.Context, id int, author models.Author) (models.Author, error)
 	DeleteAuthor(ctx context.Context, id int) error
 	GetAllAuthors(ctx context.Context) ([]models.Author, error)
+	
 }
+

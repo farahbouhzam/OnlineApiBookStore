@@ -184,52 +184,50 @@ func (s *MySQLBookStore) DeleteBook(ctx context.Context,id int) error {
 
 
 
-func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.SearchCriteria)([]models.Book, error){
+func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.SearchCriteria) ([]models.Book, error) {
 
-    var books []models.Book
+	var books []models.Book
+
 	query := `
-	  SELECT b.id, b.title, b.published_at, b.price, b.stock, p.author_id
-	  FROM books b
-	  WHERE 1 = 1
+		SELECT b.id, b.title, b.published_at, b.price, b.stock, b.author_id
+		FROM books b
+		WHERE 1 = 1
 	`
+
 	var args []interface{}
 
-	if searchCriteria.Title !=""{
-		query +="AND b.title LIKE ?"
+	if searchCriteria.Title != "" {
+		query += " AND b.title LIKE ?"
 		args = append(args, "%"+searchCriteria.Title+"%")
-	} 
-
-	if searchCriteria.AuthorId !=0 {
-		query +=" AND b.title LIKE ?"
-		args = append(args,searchCriteria.AuthorId)
-
 	}
 
-	if searchCriteria.Genre !=""{
-		query += "AND b.genres LIKE ?"
-		args = append(args,searchCriteria.Genre)
+	if searchCriteria.AuthorID != 0 {
+		query += " AND b.author_id = ?"
+		args = append(args, searchCriteria.AuthorID)
+	}
 
+	if searchCriteria.Genre != "" {
+		query += " AND b.genres LIKE ?"
+		args = append(args, "%"+searchCriteria.Genre+"%")
 	}
 
 	if searchCriteria.MinPrice != 0 {
 		query += " AND b.price >= ?"
-		args = append(args,searchCriteria.MinPrice)
+		args = append(args, searchCriteria.MinPrice)
 	}
 
-	if searchCriteria.MaxPrice !=0 {
-		query +="AND b.price <= ?"
-		args = append(args,searchCriteria.MaxPrice)
+	if searchCriteria.MaxPrice != 0 {
+		query += " AND b.price <= ?"
+		args = append(args, searchCriteria.MaxPrice)
 	}
 
-	rows, err := s.db.QueryContext(ctx,query, args...)
-
-	if err !=nil {
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		var book models.Book
 
 		err := rows.Scan(
@@ -239,16 +237,13 @@ func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.S
 			&book.Price,
 			&book.Stock,
 			&book.Author.ID,
-
 		)
-
 		if err != nil {
 			return nil, err
 		}
+
 		books = append(books, book)
 	}
 
 	return books, nil
-
-
 }

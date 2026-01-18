@@ -10,4 +10,5 @@ type CustomerStore interface {
 	GetCustomer(ctx context.Context,id int) (models.Customer, error)
 	UpdateCustomer(ctx context.Context,id int, customer models.Customer) (models.Customer, error)
 	DeleteCustomer(ctx context.Context,id int) error
+	GetAllCustomers(ctx context.Context) ([]models.Customer, error)
 }

@@ -167,3 +167,5 @@ func (s *MySQLAuthorStore) GetAllAuthors(ctx context.Context) ([]models.Author, 
 	return authors, nil
 
 }
+
+

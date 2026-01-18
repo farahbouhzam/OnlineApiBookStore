@@ -185,6 +185,41 @@ func (s *MySQLCustomerStore) DeleteCustomer(ctx context.Context,id int) error {
 }
 
 
+func (s *MySQLCustomerStore) GetAllCustomers(ctx context.Context) ([]models.Customer, error) {
+	query := `
+	  SELECT id, name, email, created_at, address_id
+	  FROM customers
+	
+	`
+	rows, err := s.db.QueryContext(ctx,query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var customers []models.Customer
+
+	for rows.Next() {
+		var customer models.Customer
+
+		err := rows.Scan(
+			&customer.ID,
+			&customer.Name,
+			&customer.CreatedAt,
+			&customer.Address,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		customers = append(customers, customer)
+	}
+
+	return customers, nil
+
+}
+
 
 
 
