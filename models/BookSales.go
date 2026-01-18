@@ -4,6 +4,6 @@ package models
 
 type BookSales struct { 
 	
-	Book Book`json:"book"` 
+	BookID int
     Quantity int  `json:"quantity_sold"`
 } 

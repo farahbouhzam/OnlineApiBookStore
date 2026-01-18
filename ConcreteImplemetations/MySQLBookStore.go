@@ -201,9 +201,9 @@ func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.S
 		args = append(args, "%"+searchCriteria.Title+"%")
 	}
 
-	if searchCriteria.AuthorID != 0 {
+	if searchCriteria.AuthorId != 0 {
 		query += " AND b.author_id = ?"
-		args = append(args, searchCriteria.AuthorID)
+		args = append(args, searchCriteria.AuthorId)
 	}
 
 	if searchCriteria.Genre != "" {
