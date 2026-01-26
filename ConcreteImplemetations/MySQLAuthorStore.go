@@ -140,6 +140,7 @@ func (s *MySQLAuthorStore) GetAllAuthors(ctx context.Context) ([]models.Author, 
 	
 	`
 	rows, err := s.db.QueryContext(ctx,query)
+	defer rows.Close()
 
 	if err != nil {
 		return nil, err

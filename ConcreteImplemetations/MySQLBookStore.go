@@ -184,41 +184,33 @@ func (s *MySQLBookStore) DeleteBook(ctx context.Context,id int) error {
 
 
 
-func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.SearchCriteria) ([]models.Book, error) {
-
-	var books []models.Book
-
+func (s *MySQLBookStore) SearchBooks(ctx context.Context, c models.SearchCriteria) ([]models.Book, error) {
 	query := `
-		SELECT b.id, b.title, b.published_at, b.price, b.stock, b.author_id
-		FROM books b
-		WHERE 1 = 1
+		SELECT id, title, published_at, price, stock, author_id
+		FROM books
+		WHERE 1=1
 	`
-
 	var args []interface{}
 
-	if searchCriteria.Title != "" {
-		query += " AND b.title LIKE ?"
-		args = append(args, "%"+searchCriteria.Title+"%")
+	if c.Title != "" {
+		query += " AND title LIKE ?"
+		args = append(args, "%"+c.Title+"%")
 	}
-
-	if searchCriteria.AuthorId != 0 {
-		query += " AND b.author_id = ?"
-		args = append(args, searchCriteria.AuthorId)
+	if c.AuthorId != 0 {
+		query += " AND author_id = ?"
+		args = append(args, c.AuthorId)
 	}
-
-	if searchCriteria.Genre != "" {
-		query += " AND b.genres LIKE ?"
-		args = append(args, "%"+searchCriteria.Genre+"%")
+	if c.Genre != "" {
+		query += " AND genres LIKE ?"
+		args = append(args, "%"+c.Genre+"%")
 	}
-
-	if searchCriteria.MinPrice != 0 {
-		query += " AND b.price >= ?"
-		args = append(args, searchCriteria.MinPrice)
+	if c.MinPrice != 0 {
+		query += " AND price >= ?"
+		args = append(args, c.MinPrice)
 	}
-
-	if searchCriteria.MaxPrice != 0 {
-		query += " AND b.price <= ?"
-		args = append(args, searchCriteria.MaxPrice)
+	if c.MaxPrice != 0 {
+		query += " AND price <= ?"
+		args = append(args, c.MaxPrice)
 	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -227,23 +219,11 @@ func (s *MySQLBookStore) SearchBooks(ctx context.Context,searchCriteria models.S
 	}
 	defer rows.Close()
 
+	var books []models.Book
 	for rows.Next() {
-		var book models.Book
-
-		err := rows.Scan(
-			&book.ID,
-			&book.Title,
-			&book.PublishedAt,
-			&book.Price,
-			&book.Stock,
-			&book.Author.ID,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		books = append(books, book)
+		var b models.Book
+		rows.Scan(&b.ID, &b.Title, &b.PublishedAt, &b.Price, &b.Stock, &b.Author.ID)
+		books = append(books, b)
 	}
-
 	return books, nil
 }

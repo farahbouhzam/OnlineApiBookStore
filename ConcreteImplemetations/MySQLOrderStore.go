@@ -89,80 +89,70 @@ func (s *MySQLOrderStore) CreateOrder(ctx context.Context, order models.Order) (
 
 }
 
-func (s *MySQLOrderStore) GetOrder(ctx context.Context,id int) (models.Order, error) {
-
+func (s *MySQLOrderStore) GetOrder(ctx context.Context, id int) (models.Order, error) {
 	query := `
-	SELECT
-	  o.id, o.customer_id, o.total_price, o.created_at, o.status, 
-      c.id, c.name, c.email
-	FROM orders o
-	JOIN customers c ON o.customer_id = c.id
-	WHERE o.id=?
+		SELECT 
+			o.id, o.total_price, o.created_at, o.status,
+			c.id, c.name, c.email
+		FROM orders o
+		JOIN customers c ON o.customer_id = c.id
+		WHERE o.id = ?
 	`
 
 	var order models.Order
-
-	err := s.db.QueryRowContext(ctx,query, id).Scan(
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
 		&order.ID,
-		&order.Customer.ID,
 		&order.TotalPrice,
 		&order.CreatedAt,
 		&order.Status,
+		&order.Customer.ID,
+		&order.Customer.Name,
+		&order.Customer.Email,
 	)
-
 	if err != nil {
 		return order, err
 	}
 
-	// getting order items
-
-	queryItem := `
-	  SELECT 
-	    oi.id, oi.quantity,
-		b.id, b.title, b.genres, b.published_at, b.price, b.stock
+	itemsQuery := `
+		SELECT 
+			oi.id, oi.quantity,
+			b.id, b.title, b.genres, b.published_at, b.price, b.stock
 		FROM order_items oi
 		JOIN books b ON oi.book_id = b.id
 		WHERE oi.order_id = ?
-
 	`
 
-	rows, err := s.db.Query(queryItem, order.ID)
-
+	rows, err := s.db.QueryContext(ctx, itemsQuery, order.ID)
 	if err != nil {
 		return order, err
 	}
-
 	defer rows.Close()
+
 	for rows.Next() {
 		var item models.OrderItem
-		var jsonGenre string
+		var genresJSON string
+
 		err := rows.Scan(
 			&item.ID,
 			&item.Quantity,
 			&item.Book.ID,
 			&item.Book.Title,
-			&item.Book.Title,
-			&jsonGenre,
+			&genresJSON,
 			&item.Book.PublishedAt,
 			&item.Book.Price,
 			&item.Book.Stock,
 		)
-
 		if err != nil {
 			return order, err
 		}
 
-		err = json.Unmarshal([]byte(jsonGenre), &item.Book.Genres)
-		if err != nil {
-			return order, err
-		}
-
+		_ = json.Unmarshal([]byte(genresJSON), &item.Book.Genres)
 		order.Items = append(order.Items, item)
 	}
 
 	return order, nil
-
 }
+
 
 func (s *MySQLOrderStore) UpdateOrderStatus(ctx context.Context,id int, status string) (models.Order, error) {
 	var order models.Order

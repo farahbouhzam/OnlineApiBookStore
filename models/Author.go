@@ -1,8 +1,8 @@
 package models
 
 type Author struct { 
-    ID        int    
-    FirstName string 
-    LastName  string 
-    Bio       string 
+    ID        int    `json:"id"` 
+    FirstName string `json:"first_name"` 
+    LastName  string `json:"last_name"` 
+    Bio       string `json:"bio"` 
 }

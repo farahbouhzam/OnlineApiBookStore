@@ -10,4 +10,4 @@ type Customer struct {
     Email     string    `json:"email"` 
     Address   Address   `json:"address"` 
     CreatedAt time.Time `json:"created_at"` 
-}
+} 

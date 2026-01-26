@@ -187,39 +187,41 @@ func (s *MySQLCustomerStore) DeleteCustomer(ctx context.Context,id int) error {
 
 func (s *MySQLCustomerStore) GetAllCustomers(ctx context.Context) ([]models.Customer, error) {
 	query := `
-	  SELECT id, name, email, created_at, address_id
-	  FROM customers
-	
+		SELECT 
+			c.id, c.name, c.email, c.created_at,
+			a.id, a.street, a.city, a.state, a.postal_code, a.country
+		FROM customers c
+		JOIN addresses a ON c.address_id = a.id
 	`
-	rows, err := s.db.QueryContext(ctx,query)
 
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var customers []models.Customer
-
 	for rows.Next() {
-		var customer models.Customer
-
+		var c models.Customer
 		err := rows.Scan(
-			&customer.ID,
-			&customer.Name,
-			&customer.CreatedAt,
-			&customer.Address,
+			&c.ID,
+			&c.Name,
+			&c.Email,
+			&c.CreatedAt,
+			&c.Address.ID,
+			&c.Address.Street,
+			&c.Address.City,
+			&c.Address.State,
+			&c.Address.PostalCode,
+			&c.Address.Country,
 		)
-
 		if err != nil {
 			return nil, err
 		}
-
-		customers = append(customers, customer)
+		customers = append(customers, c)
 	}
-
 	return customers, nil
-
 }
-
 
 
 
