@@ -1,0 +1,371 @@
+openapi: 3.0.3
+info:
+  title: Online Bookstore API
+  description: >
+    REST API for managing books, authors, customers, orders,
+    authentication, and automated sales reports.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+# -------------------------
+# SECURITY
+# -------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+# -------------------------
+# SCHEMAS
+# -------------------------
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        bio:
+          type: string
+
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        published_at:
+          type: string
+          format: date-time
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+        author:
+          $ref: "#/components/schemas/Author"
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        country:
+          type: string
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        address:
+          $ref: "#/components/schemas/Address"
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        book:
+          $ref: "#/components/schemas/Book"
+        quantity:
+          type: integer
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer:
+          $ref: "#/components/schemas/Customer"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        total_price:
+          type: number
+          format: double
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    SalesReport:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        total_revenue:
+          type: number
+          format: double
+        total_orders:
+          type: integer
+        top_selling_books:
+          type: array
+          items:
+            type: object
+            properties:
+              book_id:
+                type: integer
+              quantity_sold:
+                type: integer
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+
+# -------------------------
+# PATHS
+# -------------------------
+paths:
+
+  # -------- AUTH --------
+  /auth/login:
+    post:
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+
+  # -------- AUTHORS --------
+  /authors:
+    get:
+      summary: Get all authors
+      responses:
+        "200":
+          description: List of authors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Author"
+    post:
+      security:
+        - BearerAuth: []
+      summary: Create an author (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Author"
+      responses:
+        "201":
+          description: Author created
+
+  /authors/{id}:
+    get:
+      summary: Get author by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Author details
+    put:
+      security:
+        - BearerAuth: []
+      summary: Update author
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Author updated
+    delete:
+      security:
+        - BearerAuth: []
+      summary: Delete author
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Author deleted
+
+  # -------- BOOKS --------
+  /books:
+    get:
+      summary: Search books
+      parameters:
+        - in: query
+          name: title
+          schema:
+            type: string
+        - in: query
+          name: genre
+          schema:
+            type: string
+        - in: query
+          name: author_id
+          schema:
+            type: integer
+        - in: query
+          name: min_price
+          schema:
+            type: number
+        - in: query
+          name: max_price
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of books
+    post:
+      security:
+        - BearerAuth: []
+      summary: Create book (admin)
+      responses:
+        "201":
+          description: Book created
+
+  /books/{id}:
+    get:
+      summary: Get book by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book details
+    put:
+      security:
+        - BearerAuth: []
+      summary: Update book
+      responses:
+        "200":
+          description: Book updated
+    delete:
+      security:
+        - BearerAuth: []
+      summary: Delete book
+      responses:
+        "204":
+          description: Book deleted
+
+  # -------- CUSTOMERS --------
+  /customers:
+    get:
+      summary: Get all customers
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of customers
+    post:
+      summary: Create customer
+      responses:
+        "201":
+          description: Customer created
+
+  /customers/{id}:
+    get:
+      summary: Get customer by ID
+    put:
+      summary: Update customer
+    delete:
+      summary: Delete customer
+
+  # -------- ORDERS --------
+  /orders:
+    get:
+      summary: Get all orders
+      security:
+        - BearerAuth: []
+    post:
+      summary: Create order
+
+  /orders/{id}:
+    get:
+      summary: Get order by ID
+    put:
+      summary: Update order status
+    delete:
+      summary: Delete order
+
+  # -------- REPORTS --------
+  /reports:
+    get:
+      summary: List available sales reports
+      security:
+        - BearerAuth: []
+
+  /reports/{date}:
+    get:
+      summary: Get sales report by date (YYYY-MM-DD)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: date
+          required: true
+          schema:
+            type: string
