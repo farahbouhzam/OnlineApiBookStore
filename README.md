@@ -96,6 +96,7 @@ It supports book, author, customer, and order management, advanced search, backg
 Set the following environment variables:
 
 DB_USER=root
+
 DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=3306
@@ -106,7 +107,7 @@ DB_NAME=online_bookstore
 
 ## ▶️ How to Run the Project
 
-```bash
+``` bash
 go run main.go
 
 Expected logs:
@@ -119,7 +120,7 @@ Server running on :8081
 If port 8081 is already in use, change it in main.go.
 
 
-🧪 API Testing (PowerShell Examples)
+API Testing (PowerShell Examples)
 ➕ Create an Author
 Invoke-RestMethod `
   -Uri "http://localhost:8081/authors" `
