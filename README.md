@@ -96,7 +96,6 @@ It supports book, author, customer, and order management, advanced search, backg
 Set the following environment variables:
 
 DB_USER=root
-
 DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=3306
