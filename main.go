@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"online_bookStore/database"
+	"online_bookStore/Database"
 	"online_bookStore/concreteimplemetations"
-	"online_bookStore/handlers"
+	"online_bookStore/Handlers"
 	"online_bookStore/services"
 )
 
@@ -69,7 +69,7 @@ func main() {
 
 	// ---- SERVER ----
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":8081",
 		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -78,7 +78,7 @@ func main() {
 
 	// Start server
 	go func() {
-		log.Println("Server running on :8080")
+		log.Println("Server running on :8081")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
 		}

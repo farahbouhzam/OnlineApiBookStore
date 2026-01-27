@@ -21,72 +21,69 @@ func NewMySQLOrderStore(db *sql.DB) *MySQLOrderStore {
 
 func (s *MySQLOrderStore) CreateOrder(ctx context.Context, order models.Order) (models.Order, error) {
 
-	tx, err := s.db.Begin()
 
-	if err != nil {
-		return order, err
-	}
+    tx, err := s.db.BeginTx(ctx, nil)
+    if err != nil {
+        return order, err
+    }
 
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-	}()
+    defer func() {
+        if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p)
+        }
+    }()
 
-	orderQuery := `
+    orderQuery := `
         INSERT INTO orders (customer_id, total_price, status)
         VALUES (?, ?, ?)
     `
 
-	result, err := tx.ExecContext(
-		ctx,
-		orderQuery,
-		order.Customer.ID,
-		order.TotalPrice,
-		order.Status,
-	)
+    result, err := tx.ExecContext(
+        ctx,
+        orderQuery,
+        order.Customer.ID,
+        order.TotalPrice,
+        order.Status,
+    )
+    if err != nil {
+        tx.Rollback()
+        return order, err
+    }
 
-	if err != nil {
-		tx.Rollback()
-		return order, err
-	}
+    orderID, err := result.LastInsertId()
+    if err != nil {
+        tx.Rollback()
+        return order, err
+    }
 
-	orderID, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return order, err
-	}
+    order.ID = int(orderID)
 
-	order.ID = int(orderID)
+    itemQuery := `
+        INSERT INTO order_items (order_id, book_id, quantity)
+        VALUES (?, ?, ?)
+    `
 
-	query := `
-	INSERT INTO order_items (order_id, book_id, quantity)
-	VALUES (?, ?, ?)
-	`
+    for _, item := range order.Items {
+        _, err = tx.ExecContext(
+            ctx,
+            itemQuery,
+            order.ID,
+            item.Book.ID,
+            item.Quantity,
+        )
+        if err != nil {
+            tx.Rollback()
+            return order, err
+        }
+    }
 
-	for _, item := range order.Items {
-		_, err = tx.Exec(
-			query,
-			order.ID,
-			item.Book.ID,
-			item.Quantity,
-		)
+    if err = tx.Commit(); err != nil {
+        tx.Rollback()
+        return order, err
+    }
 
-		if err != nil {
-			tx.Rollback()
-			return order, err
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		tx.Rollback()
-
-		return order, err
-	}
-
-	return order, nil
-
+    return order, nil
 }
 
 func (s *MySQLOrderStore) GetOrder(ctx context.Context, id int) (models.Order, error) {

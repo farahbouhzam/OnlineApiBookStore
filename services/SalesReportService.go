@@ -124,21 +124,24 @@ func StartSalesReportJob(
 				from := to.Add(-24 * time.Hour)
 
 				report, err := reportService.GenerateSalesReport(ctx, from, to)
-				if err != nil {
-					log.Printf("Failed to generate sales report: %v", err)
-					continue
-				}
+if err != nil {
+	log.Printf("Failed to generate sales report: %v", err)
+	continue
+}
 
-				if err := SaveReportToJson(report); err != nil {
-					log.Printf("Failed to save sales report: %v", err)
-					continue
-				}
+report.Timestamp = time.Now()
 
-				log.Printf(
-					"Sales report generated: orders=%d revenue=%.2f",
-					report.TotalOrders,
-					report.TotalRevenue,
-				)
+if err := SaveReportToJson(report); err != nil {
+	log.Printf("Failed to save sales report: %v", err)
+	continue
+}
+
+log.Printf(
+	"Sales report SAVED: orders=%d revenue=%.2f",
+	report.TotalOrders,
+	report.TotalRevenue,
+)
+
 
 			case <-ctx.Done():
 				log.Println("Stopping sales report job")
