@@ -56,6 +56,27 @@ mysql -u root -p -h localhost -P 3306 online_bookstore < DataBase\schema.sql
 mysql -u root -p -h localhost -P 3306 online_bookstore < DataBase\data.sql
 ```
 
+## Database Setup (macOS)
+Install MySQL (Homebrew):
+```bash
+brew install mysql
+brew services start mysql
+```
+
+Create database:
+```bash
+mysql -u root -p -h localhost -P 3306
+```
+```sql
+CREATE DATABASE online_bookstore;
+```
+
+Create tables and insert sample data:
+```bash
+mysql -u root -p -h localhost -P 3306 online_bookstore < DataBase/schema.sql
+mysql -u root -p -h localhost -P 3306 online_bookstore < DataBase/data.sql
+```
+
 ## Run the API
 ```powershell
 go run main.go
