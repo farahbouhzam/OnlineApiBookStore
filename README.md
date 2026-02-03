@@ -81,6 +81,9 @@ mysql -u root -p -h localhost -P 3306 online_bookstore < DataBase/data.sql
 ```powershell
 go run main.go
 ```
+```bash
+go run main.go
+```
 Expected logs:
 ```
 Starting Online Bookstore API
@@ -146,6 +149,66 @@ Invoke-RestMethod `
   -Method POST `
   -Headers @{ "Content-Type"="application/json" } `
   -Body '{
+    "customer": { "id": 1 },
+    "status": "pending",
+    "total_price": 39.98,
+    "items": [
+      {
+        "book": { "id": 1 },
+        "quantity": 2
+      }
+    ]
+  }'
+```
+
+## API Testing (macOS Examples with curl)
+Author create:
+```bash
+curl -X POST "http://localhost:8081/authors" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "George",
+    "last_name": "Orwell",
+    "bio": "English novelist"
+  }'
+```
+
+Book create:
+```bash
+curl -X POST "http://localhost:8081/books" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "1984",
+    "genres": ["Dystopian", "Political"],
+    "published_at": "1949-06-08T00:00:00Z",
+    "price": 19.99,
+    "stock": 10,
+    "author": { "id": 1 }
+  }'
+```
+
+Customer create:
+```bash
+curl -X POST "http://localhost:8081/customers" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alice",
+    "email": "alice@example.com",
+    "address": {
+      "street": "Main St",
+      "city": "Paris",
+      "state": "IDF",
+      "postal_code": "75000",
+      "country": "France"
+    }
+  }'
+```
+
+Order create:
+```bash
+curl -X POST "http://localhost:8081/orders" \
+  -H "Content-Type: application/json" \
+  -d '{
     "customer": { "id": 1 },
     "status": "pending",
     "total_price": 39.98,
